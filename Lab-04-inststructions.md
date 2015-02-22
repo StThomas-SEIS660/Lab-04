@@ -227,27 +227,318 @@ Last login: Sat Feb 21 22:03:53 2015 from 10.0.2.2
 vagrant@manos:~$ curl localhost:8080/MainServlet
 <h1>This is a skeleton application-- to explore the end to end Calavera delivery framework.</h1>
 ````
-What is "curl"? curl is like a browser for the command line. Because we haven't yet set up XWindows (and I am not sure we will get to that this semester given the overhead) we can't run Chrome, IE or Firefox to see the application. But, if you had a browser able to connect to the virtual machine, it would show:
+What is "curl"? curl is like a browser for the command line. Because we are not bridging VMs to the external world, and we haven't yet set up XWindows (and I am not sure we will get to that this semester given the overhead) we can't run Chrome, IE or Firefox to see the application. But, if you had a browser able to connect to the virtual machine, it would show:
 
 ![<Display Name>](browser2.jpg)
 
-Curl the localhost
 
 (Lab lecture on Java, Tomcat, JUnit and Ant)
 
-Inspect the java code
+Let's look at what goes into making this little app work. First, how did it get there? Exit from your ssh into the VM, if you are still in there. 
 
-Inspect the ant
+You can see the resources used by the application if you go:
 
-Answer some questions about it - do a little web research
+teststu1@seis660:~/Calavera$ tree cookbooks/manos/
+cookbooks/manos/
+├── files
+│   ├── build.xml
+│   ├── Class1.java
+│   ├── INTERNAL_gitignore
+│   ├── MainServlet.java
+│   ├── TestClass1.java
+│   └── web.xml
+├── metadata.rb
+└── recipes
+    └── default.rb
+    
+Now, the cookbook here essentially includes the raw ingredients (the contents of the cookbooks/manos/files directory) as well as the recipes of how to set them up on the VM. Especially, have a look at cookbooks/manos/recipes/default.rb:
 
-Change the code in a harmless, visible way
+````
+teststu1@seis660:~/Calavera$ cat cookbooks/manos/recipes/default.rb
+# manos-default
 
-Rebuild & view via localhost
+# set up developer workstation
 
-check in locally
+# assuming Chef has set up Java, Tomcat, ant and junit
+# need to establish directory structure
+# move source code over
 
-Change the code in a way that breaks the test
+package "tree"
+
+group 'git'
+
+user 'vagrant' do
+  group 'git'
+end
+
+["/home/hijo/src/main/config",
+ "/home/hijo/src/main/java/biz/calavera", 
+ "/home/hijo/src/test/java/biz/calavera",
+ "/home/hijo/target/biz/calavera"].each do | name |
+
+  directory name  do
+    mode 00775
+    action :create
+    user "vagrant"
+    group "git"
+    recursive true
+  end
+end
+
+file_map = {
+  "INTERNAL_gitignore" => "/home/hijo/.gitignore",
+ "build.xml" => "/home/hijo/build.xml",
+ "web.xml" => "/home/hijo/src/main/config/web.xml", 
+ "Class1.java" => "/home/hijo/src/main/java/biz/calavera/Class1.java",
+ "MainServlet.java" =>  "/home/hijo/src/main/java/biz/calavera/MainServlet.java",
+ "TestClass1.java" => "/home/hijo/src/test/java/biz/calavera/TestClass1.java"
+}
+
+# download each file and place it in right directory
+file_map.each do | fileName, pathName |
+  cookbook_file fileName do
+    path pathName
+    user "vagrant"
+    group "git"
+    action :create
+  end
+end
+
+...
+````
+
+There is more, but you get the idea. Without going into the Ruby code this is written in (which would be too much detail for this class), this script essentially is creating a set of directory structures on the new manos VM and populating them with the basic Java and Ant files needed. For example, this command: 
+
+    "build.xml" => "/home/hijo/build.xml"
+    
+essentially says, take the file called "build.xml" from the files directory on the host, and copy it into /home/hijo/build.xml on the guest. 
+
+Go back into your manos VM and have a look at the home/hijo directory:
+
+````
+teststu1@seis660:~/Calavera$ vagrant ssh
+Welcome to Ubuntu 14.04.2 LTS (GNU/Linux 3.13.0-24-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com/
+Last login: Sun Feb 22 18:29:29 2015 from 10.0.2.2
+vagrant@manos:~$ tree /home/hijo
+/home/hijo
+├── build.xml
+├── src
+│   ├── main
+│   │   ├── config
+│   │   │   └── web.xml
+│   │   └── java
+│   │       └── biz
+│   │           └── calavera
+│   │               ├── Class1.java
+│   │               └── MainServlet.java
+│   └── test
+│       └── java
+│           └── biz
+│               └── calavera
+│                   └── TestClass1.java
+└── target
+    ├── biz
+    │   └── calavera
+    │       ├── Class1.class
+    │       ├── MainServlet.class
+    │       └── TestClass1.class
+    ├── CalaveraMain.jar
+    ├── result.txt
+    ├── result.xml
+    └── web.xml
+
+````
+
+That configured directory tree is the outcome of the Chef scripts that were applied when the first Vagrant up was done. But wait, there is more. How is Tomcat actually serving up the servlet? 
+
+Go: 
+
+````
+vagrant@manos:/home/hijo$ tree /var/lib/tomcat6/webapps/ROOT/WEB-INF/
+/var/lib/tomcat6/webapps/ROOT/WEB-INF/
+├── lib
+│   └── CalaveraMain.jar
+└── web.xml
+
+1 directory, 2 files
+````
+
+In order for the CalaveraMain.jar file to be served up, it needs to be put in the WEB-INF/lib directory that Tomcat knows about, and the web.xml file needs to be updated as well. How did this happen?
+
+And as a matter of fact, where did that CalaveraMain.jar file come from, anyways? It wasn't part of the files stored in the cookbook...!? Go back and look. 
+
+This is where the magic of Ant comes in. CalaveraMain.jar is a **compiled and packaged** version of the java classes you see in the java/biz/calavera directory. 
+
+Back when Java first came out, the developer would have to painstaking compile and package the software by hand, move it manually to the Tomcat directory, and restart Tomcat. But with Ant (and similar tools like Maven), we can do this all automatically. Go:
+
+````
+vagrant@manos:/home/hijo$ sudo ant
+Buildfile: /home/hijo/build.xml
+
+init:
+     [echo] 
+     [echo] 			Computer name is ${my_env.COMPUTERNAME}
+     [echo]                         User name is root
+     [echo] 			Building from /home/hijo/build.xml
+     [echo] 			Java is version 1.7
+     [echo] 			Project is ${ant.project.name}
+     [echo] 			Ant is Apache Ant(TM) version 1.9.4 compiled on April 29 2014
+     [echo] 			Basedir is /home/hijo
+     [echo] 			Source is ./src/main/java/biz/calavera
+     [echo] 			Build target is ./target
+     [echo] 			Deployment target is /var/lib/tomcat6/webapps/ROOT/WEB-INF/lib
+     [echo] 		
+
+compile:
+    [javac] Compiling 2 source files to /home/hijo/target
+    [javac] Compiling 1 source file to /home/hijo/target
+
+test:
+     [echo] 
+     [echo] 			entering test
+     [echo] 		
+    [junit] Running biz.calavera.TestClass1
+    [junit] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.074 sec
+
+compress:
+      [jar] Building jar: /home/hijo/target/CalaveraMain.jar
+
+deploy:
+   [delete] Deleting directory /var/lib/tomcat6/webapps/ROOT/WEB-INF/lib
+    [mkdir] Created dir: /var/lib/tomcat6/webapps/ROOT/WEB-INF/lib
+     [copy] Copying 1 file to /var/lib/tomcat6/webapps/ROOT/WEB-INF/lib
+     [echo] 
+     [echo] 			Attempting Tomcat restart. 
+     [echo] 		
+     [exec] The command attribute is deprecated.
+     [exec] Please use the executable attribute and nested arg elements.
+     [exec]  * Stopping Tomcat servlet engine tomcat6
+     [exec]    ...done.
+     [exec] The command attribute is deprecated.
+     [exec] Please use the executable attribute and nested arg elements.
+     [exec]  * Starting Tomcat servlet engine tomcat6
+     [exec]    ...done.
+
+main:
+     [echo]  
+     [echo] 			built and deployed to Tomcat.
+     [echo] 		
+
+BUILD SUCCESSFUL
+Total time: 8 seconds
+````
+
+(Points to anyone who can rewrite the Ant script so that it's not using the deprecated Ant command attribute generating the warnings at the bottom.)
+
+You can see the Ant script at build.xml. Compare that script to the output. It is:
+
+- Running the junit tests (more on that later)
+- Compiling the java *.java files into *.class files
+- Packaging the *.java files into a *.jar file
+- Moving the jar file to the appropriate Tomcat directory, along with the web.xml configuration file
+- Restarting Tomcat
+
+If you are interested in Ant further, you can see more about it at http://ant.apache.org/. 
+
+Let's play with the Java a little bit. Go:
+
+````
+vagrant@manos:/home/hijo$ nano src/main/java/biz/calavera/MainServlet.java 
+
+  GNU nano 2.2.6                      File: src/main/java/biz/calavera/MainServlet.java                                                            Modified  
+
+package biz.calavera;
+
+//package test;
+
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class MainServlet extends HttpServlet {
+        // Import required java libraries
+         
+          private String message;
+
+          public void init() throws ServletException
+          {
+              // Edit this message, save the file, and rebuild with Ant
+              // to see it reflected on the Web page at http://localhost:8081/MainServlet
+              message = "This is a skeleton application-- to explore the end to end Calavera delivery framework.";
+          }
+
+          public void doGet(HttpServletRequest request,
+                            HttpServletResponse response)
+                    throws ServletException, IOException
+          {
+              // Set response content type
+              response.setContentType("text/html");
+
+              // Actual logic goes here.
+              PrintWriter out = response.getWriter();
+              Class1 oResp = new Class1(message);
+              
+              out.println(oResp.webMessage());
+          }
+          
+          public void destroy()
+          {
+              // do nothing.
+          }
+        }
+````
+Find the line that says: 
+
+    message = "This is a skeleton application-- to explore the end to end Calavera delivery framework."
+
+and change it to 
+
+    message = "YourStudentID This is a skeleton application-- to explore the end to end Calavera delivery framework."
+
+Exit nano and run Ant again:
+
+    vagrant@manos:/home/hijo$ sudo ant
+    [ same output as before ] 
+
+Now try:
+
+    vagrant@manos:/home/hijo$ curl localhost:8080/MainServlet
+    <h1>YourStudentID This is a skeleton application-- to explore the end to end Calavera delivery framework.</h1>
+
+If you did it correctly, you should see that Tomcat (via curl) is now serving up the change you made. Many automated steps were executed between you making that change and it appearing in curl!
+
+Let's add it to git:
+````
+vagrant@manos:/home/hijo$ git add src/main/java/biz/calavera/MainServlet.java
+vagrant@manos:/home/hijo$ git commit -m "my local java"
+[master 04ff3cb] my local java
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+vagrant@manos:/home/hijo$ git log -p -1
+commit 04ff3cb11264ed3429889512451722c3069b3264
+Author: Charles Betz <char@calavera.biz>
+Date:   Sun Feb 22 19:44:19 2015 +0000
+
+    my local java
+
+diff --git a/src/main/java/biz/calavera/MainServlet.java b/src/main/java/biz/calavera/MainServlet.java
+index 35cdac4..54f2be4 100644
+--- a/src/main/java/biz/calavera/MainServlet.java
++++ b/src/main/java/biz/calavera/MainServlet.java
+@@ -15,7 +15,7 @@ public class MainServlet extends HttpServlet {
+          {
+              // Edit this message, save the file, and rebuild with Ant
+               // to see it reflected on the Web page at http://localhost:8081/MainServlet
+-             message = "This is a skeleton application-- to explore the end to end Calavera delivery framework.";
++             message = "YourStudentID This is a skeleton application-- to explore the end to end Calavera delivery framework.";
+          }
+ 
+          public void doGet(HttpServletRequest request,
+````
+
+Now, let's break something. 
+
 
 Rebuild with ant
 
