@@ -643,9 +643,11 @@ vagrant@manos:/home/hijo$ curl localhost:8080/MainServlet
 <h1>YourStudentID This is a skeleton application-- to explore the end to end Calavera delivery framework.</h1>
 ````
 
-Finally, let's revert to the previous version:
+Let's abandon the changes that broke the build:
 
-    vagrant@manos:/home/hijo$ git checkout src/main/java/biz/calavera/Class1.java 
+    vagrant@manos:/home/hijo$ git reset --hard
+    
+This command discards all changes you have not committed. 
     
 Do 
 
@@ -653,9 +655,34 @@ Do
     
 and you will see "four" reverted to "five." 
 
-(If you had **committed** that change, you would have run a different git command. But this was an unstaged, uncommitted change so you just checked out the previous commit and it overwrote your change that caused the failure.)
+Finally, let's go back to the original version without YourStudentID in the message:
 
+````
+vagrant@manos:/home/hijo$ git log --pretty=short --abbrev-commit
+commit 3b810e4
+Author: Charles Betz <char@calavera.biz>
 
+    my local java
+
+commit b45dc90
+Author: Charles Betz <char@calavera.biz>
+
+    initial commit
+
+vagrant@manos:/home/hijo$ git revert 3b810e4
+````
+You will need to edit the revert message in nano. 
+
+````
+[master b66c1c9] Revert "my local java"
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+```
+
+See that "YourStudentID" is now removed, as we have reverted to the original version of the code. 
+
+```` 
+vagrant@manos:/home/hijo$ cat src/main/java/biz/calavera/MainServlet.java 
+````
 
 
 
