@@ -229,7 +229,7 @@ vagrant@manos:~$ curl localhost:8080/MainServlet
 ````
 What is "curl"? curl is like a browser for the command line. Because we haven't yet set up XWindows (and I am not sure we will get to that this semester given the overhead) we can't run Chrome, IE or Firefox to see the application. But, if you had a browser able to connect to the virtual machine, it would show:
 
-![<Display Name>](browser.jpg)
+![<Display Name>](browser2.jpg)
 
 Curl the localhost
 
