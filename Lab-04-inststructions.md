@@ -238,6 +238,7 @@ Let's look at what goes into making this little app work. First, how did it get 
 
 You can see the resources used by the application if you go:
 
+````
 teststu1@seis660:~/Calavera$ tree cookbooks/manos/
 cookbooks/manos/
 ├── files
@@ -250,6 +251,7 @@ cookbooks/manos/
 ├── metadata.rb
 └── recipes
     └── default.rb
+````
     
 Now, the cookbook here essentially includes the raw ingredients (the contents of the cookbooks/manos/files directory) as well as the recipes of how to set them up on the VM. Especially, have a look at cookbooks/manos/recipes/default.rb:
 
@@ -307,7 +309,7 @@ end
 ...
 ````
 
-There is more, but you get the idea. Without going into the Ruby code this is written in (which would be too much detail for this class), this script essentially is creating a set of directory structures on the new manos VM and populating them with the basic Java and Ant files needed. For example, this command: 
+There is more, but you get the idea. Without going into the Ruby code this is written in (which would be too much detail for this class), this script  is creating a set of directory structures on the new manos VM and populating them with the basic Java and Ant files needed. For example, this command: 
 
     "build.xml" => "/home/hijo/build.xml"
     
@@ -645,8 +647,16 @@ vagrant@manos:/home/hijo$ curl localhost:8080/MainServlet
 
 Finally, let's revert to the previous version:
 
+    vagrant@manos:/home/hijo$ git checkout src/main/java/biz/calavera/Class1.java 
+    
+Do 
 
-Try something w/ vagrant up test - translate your script to the chef recipe. 
+    cat rc/main/java/biz/calavera/Class1.java 
+    
+and you will see "four" reverted to "five." 
+
+(If you had **committed** that change, you would have run a different git command. But this was an unstaged, uncommitted change so you just checked out the previous commit and it overwrote your change that caused the failure.)
+
 
 
 
