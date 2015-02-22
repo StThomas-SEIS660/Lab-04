@@ -169,7 +169,7 @@ teststu1@seis660:~/Calavera$ tree
 34 directories, 53 files
 ````
 
-Hint: if you are getting garbage characters like âââ in your tree, see this:
+Hint: if you are using Putty or some other terminal emulator and getting garbage characters like âââ in your tree, see this:
 
 http://unix.stackexchange.com/questions/61293/how-can-i-change-locale-encoding-to-avoid-getting-weird-characters-in-terminal
 
