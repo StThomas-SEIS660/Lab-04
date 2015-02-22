@@ -232,8 +232,6 @@ What is "curl"? curl is like a browser for the command line. Because we are not 
 ![<Display Name>](browser2.jpg)
 
 
-(Lab lecture on Java, Tomcat, JUnit and Ant)
-
 Let's look at what goes into making this little app work. First, how did it get there? Exit from your ssh into the VM, if you are still in there. 
 
 You can see the resources used by the application if you go:
