@@ -515,6 +515,11 @@ vagrant@manos:/home/hijo$ git add src/main/java/biz/calavera/MainServlet.java
 vagrant@manos:/home/hijo$ git commit -m "my local java"
 [master 04ff3cb] my local java
  1 file changed, 1 insertion(+), 1 deletion(-)
+```` 
+Review your change:
+
+
+````
 vagrant@manos:/home/hijo$ git log -p -1
 commit 04ff3cb11264ed3429889512451722c3069b3264
 Author: Charles Betz <char@calavera.biz>
@@ -539,12 +544,106 @@ index 35cdac4..54f2be4 100644
 
 Now, let's break something. 
 
+Go: 
 
-Rebuild with ant
+````
+vagrant@manos:/home/hijo$ nano src/main/java/biz/calavera/Class1.java 
 
-Revert to the previous version
+  GNU nano 2.2.6                                 File: src/main/java/biz/calavera/Class1.java                                                                          
+
+package biz.calavera;
 
 
+public class Class1 {
+          String strMsg;
+          
+          public Class1 (String inString)
+          {
+                    strMsg = inString;
+          }
+        public String five()
+        { 
+                return "five";
+        }
+
+          public String webMessage()
+          {
+              return "<h1>" + strMsg + "</h1>";
+          }
+
+
+        }
+````
+
+Replace 
+
+    return "five";
+
+with 
+
+    return "four";
+    
+
+
+Rebuild with ant:
+
+````
+vagrant@manos:/home/hijo$ sudo ant
+Buildfile: /home/hijo/build.xml
+
+init:
+     [echo] 
+     [echo] 			Computer name is ${my_env.COMPUTERNAME}
+     [echo]                         User name is root
+     [echo] 			Building from /home/hijo/build.xml
+     [echo] 			Java is version 1.7
+     [echo] 			Project is ${ant.project.name}
+     [echo] 			Ant is Apache Ant(TM) version 1.9.4 compiled on April 29 2014
+     [echo] 			Basedir is /home/hijo
+     [echo] 			Source is ./src/main/java/biz/calavera
+     [echo] 			Build target is ./target
+     [echo] 			Deployment target is /var/lib/tomcat6/webapps/ROOT/WEB-INF/lib
+     [echo] 		
+
+compile:
+    [javac] Compiling 2 source files to /home/hijo/target
+    [javac] Compiling 1 source file to /home/hijo/target
+
+test:
+     [echo] 
+     [echo] 			entering test
+     [echo] 		
+    [junit] Running biz.calavera.TestClass1
+    [junit] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.074 sec
+
+BUILD FAILED
+/home/hijo/build.xml:69: Test biz.calavera.TestClass1 failed
+
+Total time: 1 second
+````
+
+We got something quite different - a failed build. We can see the results this way:
+
+````
+vagrant@manos:/home/hijo$ cat target/result.txt
+Testsuite: biz.calavera.TestClass1
+Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.074 sec
+
+Testcase: testTrue took 0.012 sec
+	FAILED
+five is 5 expected:<f[ive]> but was:<f[our]>
+junit.framework.AssertionFailedError: five is 5 expected:<f[ive]> but was:<f[our]>
+	at biz.calavera.TestClass1.testTrue(Unknown Source)
+````
+
+Notice we can still curl. The broken build was not deployed to the local Tomcat. 
+
+````
+vagrant@manos:/home/hijo$ curl localhost:8080/MainServlet
+<h1>YourStudentID This is a skeleton application-- to explore the end to end Calavera delivery framework.</h1>
+````
+
+Finally, let's revert to the previous version:
 
 
 Try something w/ vagrant up test - translate your script to the chef recipe. 
