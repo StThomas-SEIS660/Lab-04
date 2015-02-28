@@ -216,6 +216,20 @@ Now, do "cat Vagrantfile". You should see that Manos is the only machine left. V
 
     teststu1@seis660:~/Calavera$ vagrant up manos
     
+**Important**
+If you get
+````
+An error occurred while downloading the remote file. The error
+message, if any, is reproduced below. Please fix this error and try again.
+
+Couldn't open file /home/student/beno6137/Calavera/opscode-ubuntu-14.04a
+````
+you need to export an environment variable. Type
+
+    export VAGRANT_HOME=/var/vagrant/.vagrant.d
+    
+and it now should work. 
+
 Manos comes preconfigured with a running Tomcat instance and a simple test-harness based Java application. You can see it running when you ssh in:
 
 ````
