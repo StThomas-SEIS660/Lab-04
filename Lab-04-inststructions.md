@@ -3,8 +3,6 @@
 
 Lab objectives: 
 
-To undes
-
 In this lab, you will initialize a Vagrant machine that has been preconfigured as a simple developer workstation with:
 
 * Java
