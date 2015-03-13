@@ -205,9 +205,9 @@ Return to the Calavera base directory and issue the following:
 
 ````
 teststu1@seis660:~/Calavera$ cd ~/Calavera/
-teststu1@seis660:~/Calavera$ git checkout Lab-04
-Branch Lab-04 set up to track remote branch Lab-04 from origin.
-Switched to a new branch 'Lab-04'
+teststu1@seis660:~/Calavera$ git checkout Cala-04
+Branch Cala-04 set up to track remote branch Cala-04 from origin.
+Switched to a new branch 'Cala-04'
 teststu1@seis660:~/Calavera$ 
 ````
 Now, do "cat Vagrantfile". You should see that Manos is the only machine left. Vagrant up manos:
